@@ -18,8 +18,10 @@ See the Forge Documentation online for more detailed instructions:
 http://mcforge.readthedocs.io/en/latest/gettingstarted/
 
 Step 1: Open your command-line and browse to the folder where you extracted the zip file.
+//若是想要编译此项目，clone这个仓库。如果是要自己做自己的，就去上面网站下载mdk。
 
 Step 2: Once you have a command window up in the folder that the downloaded material was placed, type:
+//cd到项目目录，运行下面的命令，初始化项目目录。
 
 Windows: "gradlew setupDecompWorkspace"
 Linux/Mac OS: "./gradlew setupDecompWorkspace"
@@ -28,13 +30,18 @@ Step 3: After all that finished, you're left with a choice.
 For eclipse, run "gradlew eclipse" (./gradlew eclipse if you are on Mac/Linux)
 
 If you prefer to use IntelliJ, steps are a little different.
+
+//如果你用的是IDEA，import这个项目。
 1. Open IDEA, and import project.
 2. Select your build.gradle file and have it import.
 3. Once it's finished you must close IntelliJ and run the following command:
 
+//然后运行这个命令，生成IDEA的运行配置。然后IDEA的右上方就会出现两个可以运行的配置了。
+//等gradle build完成。如果三角是灰的就重启IDEA，应该就ok了。
 "gradlew genIntellijRuns" (./gradlew genIntellijRuns if you are on Mac/Linux)
 
 Step 4: The final step is to open Eclipse and switch your workspace to /eclipse/ (if you use IDEA, it should automatically start on your project)
+//Eclipse已经被我无情抛弃
 
 If at any point you are missing libraries in your IDE, or you've run into problems you can run "gradlew --refresh-dependencies" to refresh the local cache. "gradlew clean" to reset everything {this does not affect your code} and then start the processs again.
 
