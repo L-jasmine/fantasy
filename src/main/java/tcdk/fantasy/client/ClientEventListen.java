@@ -92,6 +92,7 @@ public class ClientEventListen {
             //NetLoader.instance.sendToServer(new SlashMsg());
     }
 
+    //在镜头移动的时候触发。可以利用来实现锁定视角一直直视某一个怪物
     @SubscribeEvent
     public void CameraSetup(EntityViewRenderEvent.CameraSetup event){
 
