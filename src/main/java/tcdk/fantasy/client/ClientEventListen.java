@@ -7,9 +7,11 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemSword;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
+import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -37,6 +39,9 @@ public class ClientEventListen {
 
     private static ResourceLocation swordtext
             =new ResourceLocation("textures/items/diamond_sword.png");
+    /**
+     * 在生物的头上绘制一个图标，并且随时间沿着Y轴旋转。
+     * */
     private void randerTag(RenderLivingEvent event){
         double x=event.getX();
         double y=event.getY();
@@ -71,10 +76,10 @@ public class ClientEventListen {
     @SubscribeEvent
     public void renderLivingEvent(RenderLivingEvent.Pre event) {
         EntityPlayer player= Minecraft.getMinecraft().player;
-        if(event.getEntity()!=player){
+        if(event.getEntity()!=player && player.getHeldItemMainhand().getItem() instanceof ItemSword){
             float rtick=event.getPartialRenderTick();
             Vec3d start=player.getPositionEyes(rtick);
-            Vec3d end=player.getLook(rtick).scale(6).add(start);
+            Vec3d end=player.getLook(rtick).scale(5).add(start);
             boolean res= MathHelp.isEntityOnPath(event.getEntity(),start,end);
             if (res){
                 randerTag(event);
@@ -83,7 +88,7 @@ public class ClientEventListen {
     }
 
     @SubscribeEvent
-    public void InputEvent (InputEvent.MouseInputEvent event) {
+    public void InputEvent (MouseEvent event) {
             //NetLoader.instance.sendToServer(new SlashMsg());
     }
 
