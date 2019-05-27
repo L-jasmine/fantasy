@@ -20,7 +20,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Logger;
@@ -91,18 +91,32 @@ public class ClientEventListen {
     }
 
     //TODO 做一个蓄力的粒子效果。若蓄力完成就会产生剑气。普通的剑攻击变成一个范围型攻击。
+    boolean isPress=false;
     @SubscribeEvent
     public void InputEvent (MouseEvent event) {
         EntityPlayerSP player= Minecraft.getMinecraft().player;
-        logger.info(event.getButton()+":"+event.isButtonstate());
-        if(event.getButton()==0 && player.getHeldItemMainhand().getItem() instanceof ItemSword){
+        int button=event.getButton();
+        boolean state=event.isButtonstate();
+        if(button==0 && player.getHeldItemMainhand().getItem() instanceof ItemSword){
             event.setCanceled(true);
-            if(player.getCooledAttackStrength(0)==1.0){
+            if(player.getCooledAttackStrength(0)==1.0 && state) {
                 //event.isButtonstate可以判断是按下还是放开
-                if(!event.isButtonstate()){
-                    player.resetCooldown();
-                }
+                isPress = true;
+            } else if(isPress && !state){
+                player.resetCooldown();
+                isPress=false;
+                //TODO 攻击
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void RenderStart(TickEvent.RenderTickEvent event){
+        if(event.phase== TickEvent.Phase.START && isPress){
+            //在Mouse中，XY的值被取过之后会被重置为0
+            // 利用这一点，在渲染一开始取一次，使得后面的逻辑认为鼠标没有移动。
+            //以此达到锁定视角的作用
+            mc.mouseHelper.mouseXYChange();
         }
     }
 
