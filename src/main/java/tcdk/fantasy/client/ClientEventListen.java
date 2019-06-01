@@ -5,12 +5,8 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemSword;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
@@ -26,7 +22,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Logger;
 import tcdk.fantasy.Fantasy;
 import tcdk.fantasy.Util.MathHelp;
-import tcdk.fantasy.client.fx.FxManager;
 
 //TODO CameraSetup RenderWorldLastEvent
 @SideOnly(Side.CLIENT)
@@ -91,28 +86,74 @@ public class ClientEventListen {
     }
 
     //TODO 做一个蓄力的粒子效果。若蓄力完成就会产生剑气。普通的剑攻击变成一个范围型攻击。
-    boolean isPress=false;
+    private boolean isPress=false,lock=false,swing=false;
+    private Vec3d attackVec=new Vec3d(0,0,0);
+    private int strength=0;
+
+    //分级
+    private int level(Vec3d attackVec,Vec3d dv){
+        double sv=dv.dotProduct(attackVec);
+        double abssv=sv<0?-sv:sv;
+        abssv=Math.max(abssv,1);
+        if(sv<0){
+            return -1-(int)(Math.log10(abssv)/0.3);
+        }else {
+            return 1+(int)(Math.log10(abssv)/0.3);
+        }
+    }
+
     @SubscribeEvent
     public void InputEvent (MouseEvent event) {
-        EntityPlayerSP player= Minecraft.getMinecraft().player;
+        EntityPlayerSP player= mc.player;
         int button=event.getButton();
         boolean state=event.isButtonstate();
         if(button==0 && player.getHeldItemMainhand().getItem() instanceof ItemSword){
             event.setCanceled(true);
             if(player.getCooledAttackStrength(0)==1.0 && state) {
                 //event.isButtonstate可以判断是按下还是放开
+                //按下，进入锁定视角状态，初始化偏移值和方向。开始记录鼠标偏移
                 isPress = true;
+                lock=true;
+                swing=true;
             } else if(isPress && !state){
-                player.resetCooldown();
                 isPress=false;
-                //TODO 攻击
+                //放开，开始记录鼠标记录反向鼠标偏移。
+            }
+        }else if(button==-1 && player.getHeldItemMainhand().getItem() instanceof ItemSword && swing){
+            int dx=event.getDx();
+            int dy=event.getDy();
+            Vec3d dv=new Vec3d(dx,dy,0);
+            logger.info("["+dx+":"+dy+":"+event.getX()+":"+event.getY()+"]");
+
+            if(isPress){
+                if(strength<=0){
+                    //初始化方向
+                    attackVec=dv.normalize();
+                    strength=1;
+
+                    logger.info("init attackVec:"+attackVec);
+                }else{
+                    strength=Math.max(level(attackVec,dv),strength);
+                    logger.info("inc strength:"+strength);
+                }
+            }else{
+                double decStrength=Math.min(level(attackVec,dv),0);
+                logger.info("dec strength:"+decStrength);
+                if(strength+decStrength<=0){
+                    //已经将之前蓄力释放完成，发出攻击动作
+                    player.resetCooldown();
+                    strength=0;
+                    swing=false;
+                    //TODO 攻击
+                    logger.info("attack");
+                }
             }
         }
     }
 
     @SubscribeEvent
     public void RenderStart(TickEvent.RenderTickEvent event){
-        if(event.phase== TickEvent.Phase.START && isPress){
+        if(event.phase== TickEvent.Phase.START && lock){
             //在Mouse中，XY的值被取过之后会被重置为0
             // 利用这一点，在渲染一开始取一次，使得后面的逻辑认为鼠标没有移动。
             //以此达到锁定视角的作用
@@ -127,9 +168,11 @@ public class ClientEventListen {
 
     @SubscribeEvent
     public void RenderLast(RenderWorldLastEvent event){
-
-        float partialTicks=event.getPartialTicks();
-        TextureManager textureManager=mc.getTextureManager();
-        FxManager.renderAll(partialTicks,textureManager);
+        EntityPlayerSP player=mc.player;
+        if(player.getHeldItemMainhand().getItem() instanceof ItemSword
+                && lock && !swing
+                && player.getCooledAttackStrength(0)==1.0){
+            lock=false;
+        }
     }
 }
